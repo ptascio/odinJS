@@ -1,7 +1,7 @@
 //if last id is deleted, it must be stored so that next id picks up where
 //left off. if lastId < veryLastId, don't change it (e.g., delete 5 then 4, it status
 //at 5) so that means we delete the last one...
-//
+//use the Book constructor
 
 
 let myLib = [{"author": "Bob",
@@ -12,17 +12,22 @@ let myLib = [{"author": "Bob",
 }];
 let bookList = document.getElementById("bookList");
 let bookForm = document.getElementById("bookForm");
+let formContainer = document.getElementById("formContainer");
 let revealBtn = document.getElementById("addBookBtn");
+let cancelBtn = document.getElementById("closeModal");
 let bookSubmissionBtn = document.getElementById("submitBk");
 let deletedId;
 let latestDltdId;
-let newSubmission = {
-  "author": "",
-  "title": "",
-  "pages": "",
-  "read": "",
-  "id": null
-};
+
+// let newSubmission = {
+//   "author": "",
+//   "title": "",
+//   "pages": "",
+//   "read": "",
+//   "id": null
+// };
+var newBook;
+
 
 let writtenInputs = document.getElementsByClassName("write");
 let rdioBtns = document.getElementsByClassName("choose");
@@ -41,12 +46,17 @@ function render(){
     let bk = myLib[i];
     newRow.setAttribute("id", bk["id"]);
     for (var key in bk){
-        if (bk.hasOwnProperty(key)){
+        if (bk.hasOwnProperty(key) && typeof bk[key] !== 'function'){
       let newTd = createEl("td");
-      if (bk[key] !== "id"){
+      if (key !== "id"){
         newTd.innerText = bk[key];
       }
+      if (key === "read"){
+        newTd.addEventListener("click", toggleRead);
+      }
+      if (newTd.innerText.length > 0){
       newRow.appendChild(newTd);
+    }
     }
     }
     bookList.appendChild(newRow);
@@ -64,6 +74,7 @@ function addId(){
   return newId;
 }
 
+
 function renderLatest(){
   var newEntry = myLib[myLib.length - 1];
   let newRow = createEl("tr");
@@ -72,12 +83,20 @@ function renderLatest(){
   let newTd;
   for (var key in newEntry){
     newRow.setAttribute("id", newEntry["id"]);
-    if (newEntry.hasOwnProperty(key)){
+    if (newEntry.hasOwnProperty(key) && typeof newEntry[key] !== 'function'){
       newTd = createEl("td");
-      newTd.innerText = newEntry[key];
+      if (key !== "id"){
+        newTd.innerText = newEntry[key];
+      }
+      if (key === "read"){
+        newTd.addEventListener("click", toggleRead);
+      }
     }
-    newRow.appendChild(newTd);
+    if (newTd.innerText.length > 0){
+      newRow.appendChild(newTd);
+    }
   }
+  formContainer.setAttribute("style", "display: none");
   bookList.appendChild(newRow);
 }
 
@@ -106,12 +125,14 @@ function Book(title, author, pages, read){
   };
 }
 
+
 function revealForm(){
-  bookForm.setAttribute("style", "display: block;");
+  newBook = new Book();
+  formContainer.setAttribute("style", "display: block;");
 }
 
 function handleInput(e){
-  newSubmission[e.target.name] = e.target.value;
+  newBook[e.target.name] = e.target.value;
 }
 
 for(var i = 0; i < writtenInputs.length; i++){
@@ -123,15 +144,14 @@ for(var i = 0; i < rdioBtns.length; i++){
 }
 
 function readOrNot(e){
-  newSubmission[e.target.name] = e.target.value;
+  newBook[e.target.name] = e.target.value;
 }
 
 
 function getSubmission(e){
  e.preventDefault();
- newSubmission["id"] = addId();
- myLib.push(newSubmission);
- resetSubmission();
+ newBook["id"] = addId();
+ myLib.push(newBook);
  renderLatest();
  clearFields();
 }
@@ -142,16 +162,6 @@ function clearFields(){
     allEntries[j].value= "";
   }
   resetBtns();
-}
-
-function resetSubmission(){
-  newSubmission = {
-    "author": "",
-    "title": "",
-    "pages": "",
-    "read": "",
-    "id": null
-  };
 }
 
 function resetBtns(){
@@ -185,14 +195,52 @@ function removeBook(idx){
   render();
 }
 
+function toggleRead(){
+ var bk;
+ var parentId = this.parentNode.id;
+  findBook(parentId, this.parentNode.cells[4]);
+ 
+}
+
+function findBook(id, node){
+  var bk;
+  for (var c = 0; c < myLib.length; c++){
+    if (myLib[c]["id"] === parseInt(id)){
+      bk = myLib[c];
+      yesOrNo(bk, node);
+    }
+  }
+}
+
+function yesOrNo(book, node){
+  switch (book["read"]) {
+    case "yes":
+      book["read"] = "no";
+      node.innerText = "no";
+      break;
+    case "no":
+      book["read"] = "yes";
+      node.innerText = "yes";
+      break;
+    default:
+      break;
+  }
+}
+
+
 function deleteBooksFromDOM(){
   while(bookList.firstChild){
     bookList.removeChild(bookList.firstChild);
   }
 }
 
+function closeMdl(){
+  newBook = undefined;
+  formContainer.setAttribute("style", "display: none")
+}
 
 
+cancelBtn.addEventListener("click", closeMdl);
 revealBtn.addEventListener("click", revealForm);
 bookSubmissionBtn.addEventListener("click", getSubmission);
 document.addEventListener("DOMContentLoaded", render());
